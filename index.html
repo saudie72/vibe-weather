@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Weather</title>
+  <meta name="description" content="Look up the current weather in any city.">
+  <style>
+    :root {
+      --teal: #0e9aa7;
+      --teal-dark: #0a6f78;
+      --coral: #ff6f61;
+      --coral-dark: #e0564a;
+      --gold: #ffc93c;
+      --sand: #fff6e5;
+      --ink: #1f2d3a;
+      --muted: #5b6b78;
+      --card: #ffffff;
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(160deg, var(--teal) 0%, #3fc1c9 45%, var(--gold) 100%) fixed;
+    }
+
+    main {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+      color: #fff;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .badge {
+      background: var(--coral);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      padding: 14px 16px;
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      background: var(--sand);
+      color: var(--ink);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--coral);
+    }
+
+    button {
+      font: inherit;
+      font-weight: 700;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--coral);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--coral-dark); }
+    button:disabled { opacity: 0.6; cursor: wait; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 30px rgba(10, 111, 120, 0.25);
+    }
+
+    .place {
+      margin: 0 0 4px;
+      font-size: 1.25rem;
+      color: var(--teal-dark);
+    }
+
+    .temp {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      margin: 8px 0;
+      color: var(--coral);
+    }
+
+    .conditions {
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--sand);
+      border-left: 4px solid var(--gold);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .stat span {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .stat strong { font-size: 1.1rem; }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      color: var(--teal-dark);
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1e6d2;
+    }
+
+    li:last-child { border-bottom: 0; }
+
+    li .meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    li .t {
+      font-weight: 700;
+      color: var(--coral);
+      white-space: nowrap;
+    }
+
+    .message {
+      color: #fff;
+      font-weight: 600;
+      min-height: 1.5em;
+      margin-bottom: 12px;
+    }
+
+    .message.error { color: #fff; background: var(--coral-dark); padding: 10px 14px; border-radius: 12px; }
+
+    [hidden] { display: none !important; }
+
+    @media (min-width: 600px) {
+      main { padding-top: 48px; }
+      h1 { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Vibe Weather</h1>
+      <span class="badge">v1</span>
+    </header>
+
+    <form id="search-form">
+      <input id="city" type="text" placeholder="Search a city, e.g. Miami" maxlength="100" required autocomplete="off" aria-label="City">
+      <button id="search-btn" type="submit">Search</button>
+    </form>
+
+    <div id="message" class="message" role="status"></div>
+
+    <section id="result" class="card" hidden>
+      <h2 class="place" id="place"></h2>
+      <div class="temp" id="temp"></div>
+      <div class="conditions" id="conditions"></div>
+      <div class="stats">
+        <div class="stat"><span>Humidity</span><strong id="humidity"></strong></div>
+        <div class="stat"><span>Wind</span><strong id="wind"></strong></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Recent searches</h2>
+      <ul id="recent"><li class="meta">Loading…</li></ul>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://xtpnngfacloldtimnvnz.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_gQW2ty4jvRXm26AGAxNmtg__esx-yZR";
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const WEATHER_CODES = {
+      0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+      45: "Fog", 48: "Depositing rime fog",
+      51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle",
+      56: "Light freezing drizzle", 57: "Freezing drizzle",
+      61: "Light rain", 63: "Rain", 65: "Heavy rain",
+      66: "Light freezing rain", 67: "Freezing rain",
+      71: "Light snow", 73: "Snow", 75: "Heavy snow", 77: "Snow grains",
+      80: "Light showers", 81: "Showers", 82: "Violent showers",
+      85: "Light snow showers", 86: "Snow showers",
+      95: "Thunderstorm", 96: "Thunderstorm with hail", 99: "Thunderstorm with heavy hail"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function setMessage(text, isError = false) {
+      $("message").textContent = text;
+      $("message").className = isError ? "message error" : "message";
+    }
+
+    async function geocode(name) {
+      const url = "https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=" + encodeURIComponent(name);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Geocoding service is unavailable.");
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) throw new Error(`No city found for "${name}".`);
+      return data.results[0];
+    }
+
+    async function forecast(lat, lon) {
+      const url = "https://api.open-meteo.com/v1/forecast"
+        + `?latitude=${lat}&longitude=${lon}`
+        + "&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code"
+        + "&temperature_unit=fahrenheit&wind_speed_unit=mph";
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Forecast service is unavailable.");
+      const data = await res.json();
+      return data.current;
+    }
+
+    function showWeather(place, current) {
+      const conditions = WEATHER_CODES[current.weather_code] ?? "Unknown";
+      const region = [place.admin1, place.country].filter(Boolean).join(", ");
+      $("place").textContent = region ? `${place.name}, ${region}` : place.name;
+      $("temp").textContent = `${Math.round(current.temperature_2m)}°F`;
+      $("conditions").textContent = conditions;
+      $("humidity").textContent = `${current.relative_humidity_2m}%`;
+      $("wind").textContent = `${Math.round(current.wind_speed_10m)} mph`;
+      $("result").hidden = false;
+      return conditions;
+    }
+
+    async function saveSearch(place, current, conditions) {
+      const { error } = await db.from("weather_searches").insert({
+        city: place.name.slice(0, 100),
+        country: place.country ? place.country.slice(0, 100) : null,
+        temperature_f: Math.round(current.temperature_2m * 10) / 10,
+        conditions: conditions.slice(0, 100)
+      });
+      if (error) console.error("Could not save search:", error.message);
+    }
+
+    async function loadRecent() {
+      const list = $("recent");
+      const { data, error } = await db
+        .from("weather_searches")
+        .select("city, country, temperature_f, conditions, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      list.replaceChildren();
+      if (error) {
+        list.innerHTML = '<li class="meta">Could not load recent searches.</li>';
+        return;
+      }
+      if (!data.length) {
+        list.innerHTML = '<li class="meta">No searches yet. Be the first!</li>';
+        return;
+      }
+      for (const row of data) {
+        const li = document.createElement("li");
+        const left = document.createElement("div");
+        const name = document.createElement("div");
+        name.textContent = row.country ? `${row.city}, ${row.country}` : row.city;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `${row.conditions ?? ""} · ${new Date(row.created_at).toLocaleString()}`;
+        left.append(name, meta);
+        const t = document.createElement("div");
+        t.className = "t";
+        t.textContent = row.temperature_f != null ? `${Math.round(row.temperature_f)}°F` : "";
+        li.append(left, t);
+        list.append(li);
+      }
+    }
+
+    $("search-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = $("city").value.trim();
+      if (!name) return;
+      $("search-btn").disabled = true;
+      setMessage("Checking the skies…");
+      try {
+        const place = await geocode(name);
+        const current = await forecast(place.latitude, place.longitude);
+        const conditions = showWeather(place, current);
+        setMessage("");
+        await saveSearch(place, current, conditions);
+        await loadRecent();
+      } catch (err) {
+        $("result").hidden = true;
+        setMessage(err.message, true);
+      } finally {
+        $("search-btn").disabled = false;
+      }
+    });
+
+    loadRecent();
+  </script>
+</body>
+</html>
